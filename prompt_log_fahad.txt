@@ -1,0 +1,83 @@
+1. 
+Input: Based on the schema in schema.sql and existing data in seed.sql, generate 25 sample expenses across the existing employees and categories, and
+also the corresponding 25 approval rows.
+
+Output:
+INSERT INTO expenses (id, user_id, category_id, amount, description, expense_date, created_at) VALUES 
+    -- Boundary rows                                                                                                             
+    (1,  3, 2, 0.01,    'Boundary test: minimum valid amount – single coffee purchased during team standup meeting',             
+    '2026-10-20', '2026-10-20 08:30:00'),                                                                                        
+    (2,  4, 1, 10000.00,'Boundary test: maximum valid amount – international flight to client site for Q4 review',  '2026-10-15',
+    '2026-10-15 09:00:00'),                                                                                                      
+    (3,  5, 5, 499.00,  'Boundary test: two-hundred-character description follows here. Advanced Python workshop covering async  
+    programming, testing best practices, and CI/CD pipelines attended at downtown tech hub on behalf of the engineering          
+    department.', '2026-10-10', '2026-10-10 10:15:00'),                                                                          
+    (4,  6, 3, 250.00,  'Boundary test: expense dated exactly 90 days ago', '2026-07-29', '2026-07-29 11:00:00'),                
+                                                                                                                                 
+    -- Test Employee 1 (user_id = 3)                                                                                             
+    (5,  3, 1, 320.50,  'Round-trip train tickets to Chicago client meeting',            '2026-10-22', '2026-10-22 07:45:00'),   
+    (6,  3, 2, 47.80,   'Team lunch after sprint review – 4 attendees',                  '2026-10-23', '2026-10-23 13:00:00'),   
+    (7,  3, 4, 89.99,   'Printer ink cartridges and copy paper for office',              '2026-10-24', '2026-10-24 14:30:00'),   
+    (8,  3, 5, 1200.00, 'AWS Solutions Architect certification exam and prep course fee','2026-09-15', '2026-09-15 09:30:00'),   
+    (9,  3, 6, 35.00,   'Parking fees during on-site client visit downtown',             '2026-10-25', '2026-10-25 16:00:00'),   
+                                                                                                                                 
+    -- Test Employee 2 (user_id = 4)                                                                                             
+    (10, 4, 1, 875.00,  'Flight and taxi to New York for annual all-hands summit',       '2026-10-01', '2026-10-01 06:30:00'),   
+    (11, 4, 2, 210.40,  'Client dinner – 6 attendees, includes tip and drinks',          '2026-10-05', '2026-10-05 19:00:00'),   
+    (12, 4, 3, 375.00,  'Business suit for client-facing presentation',                  '2026-10-08', '2026-10-08 11:00:00'),   
+    (13, 4, 4, 54.25,   'USB-C hub and cable set for remote work setup',                 '2026-10-18', '2026-10-18 10:00:00'),   
+    (14, 4, 6, 15.00,   'Postage and shipping supplies for mailing contracts',           '2026-10-26', '2026-10-26 09:00:00'),   
+                                                                                                                                 
+    -- Test Employee 3 (user_id = 5)                                                                                             
+    (15, 5, 1, 430.00,  'Hotel stay – 2 nights during Baltimore conference',             '2026-09-20', '2026-09-20 15:00:00'),   
+    (16, 5, 2, 62.50,   'Working lunch with partner team lead to align on sprint',       '2026-10-14', '2026-10-14 12:30:00'),   
+    (17, 5, 5, 3500.00, 'PMP certification boot camp – 3-day intensive program',         '2026-09-05', '2026-09-05 08:00:00'),   
+    (18, 5, 4, 129.99,  'Ergonomic keyboard and wrist rest for home office',             '2026-10-19', '2026-10-19 11:45:00'),   
+    (19, 5, 6, 200.00,  'Team-building workshop materials and facilitation kit',         '2026-10-21', '2026-10-21 09:30:00'),   
+                                                                                                                                 
+    -- Test Employee 4 (user_id = 6)                                                                                             
+    (20, 6, 1, 620.00,  'Flight to Seattle for vendor negotiation meeting',              '2026-09-28', '2026-09-28 05:00:00'),   
+    (21, 6, 2, 98.75,   'Department breakfast meeting – 8 attendees',                   '2026-10-11', '2026-10-11 08:00:00'),    
+    (22, 6, 3, 560.00,  'Two dress shirts and blazer for board presentation',            '2026-10-13', '2026-10-13 14:00:00'),   
+    (23, 6, 5, 799.00,  'Agile Scrum Master certification training and exam',            '2026-09-10', '2026-09-10 09:00:00'),   
+    (24, 6, 4, 44.50,   'Whiteboard markers, sticky notes, and dry-erase cleaner',      '2026-10-27', '2026-10-27 08:30:00'),    
+    (25, 6, 6, 75.00,   'Safety and compliance training reimbursement – mandatory',     '2026-10-16', '2026-10-16 10:00:00');     
+
+INSERT INTO approvals (id, expense_id, status, reviewer_id, comment, review_date) VALUES                                     
+                                                                                                                                 
+    -- approved                                                                                                                  
+    (1,  1,  'approved', 1, 'Approved – valid boundary amount.',                           '2026-10-21'),                        
+    (2,  3,  'approved', 2, 'Approved – training expense within policy.',                  '2026-10-12'),                        
+    (3,  4,  'approved', 1, 'Approved – attire policy compliant.',                         '2026-07-30'),                        
+    (4,  5,  'approved', 2, 'Approved – travel receipts verified.',                        '2026-10-23'),                        
+    (5,  8,  'approved', 1, 'Approved – certification aligns with team objectives.',       '2026-09-16'),                        
+    (6,  10, 'approved', 2, 'Approved – all-hands travel is pre-authorized.',              '2026-10-02'),                        
+    (7,  15, 'approved', 1, 'Approved – conference hotel at standard rate.',               '2026-09-22'),                        
+    (8,  17, 'approved', 2, 'Approved – PMP aligns with department training plan.',        '2026-09-06'),                        
+    (9,  20, 'approved', 1, 'Approved – vendor trip pre-approved by leadership.',          '2026-09-29'),                        
+    (10, 23, 'approved', 2, 'Approved – Scrum certification is on the approved list.',     '2026-09-11'),                        
+                                                                                                                                 
+    -- denied                                                                                                                    
+    (11, 2,  'denied',   1, 'Denied – international travel requires VP pre-approval. Please resubmit with approval email         
+    attached.',           '2026-10-16'),                                                                                         
+    (12, 9,  'denied',   2, 'Denied – parking not reimbursable unless no transit option was available. Please provide            
+    justification.',         '2026-10-26'),                                                                                      
+    (13, 11, 'denied',   1, 'Denied – client entertainment above the $150 per-person cap. Please resubmit with manager           
+    sign-off.',             '2026-10-06'),                                                                                       
+    (14, 12, 'denied',   2, 'Denied – business attire requires prior HR approval. Resubmit with HR authorization.',              
+                              '2026-10-09'),                                                                                     
+    (15, 16, 'denied',   1, 'Denied – same-day lunch exceeds the $50 meal cap. Resubmit the portion within policy.',             
+                             '2026-10-15'),                                                                                      
+    (16, 21, 'denied',   2, 'Denied – breakfast meeting not on approved Q4 calendar. Please provide event documentation.',       
+                       '2026-10-12'),                                                                                            
+                                                                                                                                 
+    -- pending (no reviewer, no comment, no review_date)                                                                         
+    (17, 6,  'pending', NULL, NULL, NULL),                                                                                       
+    (18, 7,  'pending', NULL, NULL, NULL),                                                                                       
+    (19, 13, 'pending', NULL, NULL, NULL),                                                                                       
+    (20, 14, 'pending', NULL, NULL, NULL),                                                                                       
+    (21, 18, 'pending', NULL, NULL, NULL),                                                                                       
+    (22, 19, 'pending', NULL, NULL, NULL),                                                                                       
+    (23, 22, 'pending', NULL, NULL, NULL),                                                                                       
+    (24, 24, 'pending', NULL, NULL, NULL),                                                                                       
+    (25, 25, 'pending', NULL, NULL, NULL);     
