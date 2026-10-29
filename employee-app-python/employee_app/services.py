@@ -1,6 +1,6 @@
 import logging
 
-from employee_app.exceptions import AuthenticationError, AuthorizationError
+from exceptions import AuthenticationError, AuthorizationError
 
 
 logger = logging.getLogger(__name__)
