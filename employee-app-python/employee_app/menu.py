@@ -23,5 +23,25 @@ def run_login(connection):
         except AuthenticationError as error: 
             print(error)
             attempts += 1
+    
+    print("Too many failed attempts.")
+    exit(1)
 
 
+# main app loop (incomplete)
+def run_menu(user, connection):
+    options = {
+        "1": "Submit expense",
+        "2": "View my expenses",
+        "3": "Edit pending expense",
+        "4": "Delete pending expense",
+        "5": "Review history",
+        "0": "Exit"
+    }
+
+    while True:
+        # print the menu options
+        # read input
+        # call the right handler function based on choice
+        # if invalid choice print message and loop again
+        pass
