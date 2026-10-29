@@ -6,3 +6,4 @@ logs/
 target/
 *.class
 references
+TestConnection.java
