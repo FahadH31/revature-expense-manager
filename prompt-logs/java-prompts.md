@@ -51,3 +51,22 @@ Output:
   Once set permanently, both apps and your tests will find it automatically with no extra steps.                                                                       
   ──────                                                                                                                                                               
   Bottom line: Skip the .env file entirely. Just set EM_DB_PATH permanently in Windows environment variables and move on.
+
+
+## 2026-10-30
+Prompt: Cannot make a static reference to the non-static method login(String, String, Connection) from the type AuthService. I get this IDE error on line 27 in Menu.java
+
+Output: 
+login() in AuthService is an instance method, not a static method. You are calling it incorrectly here:
+
+AuthService.login(username, password, conn);
+
+Create an AuthService object first, then call the method on that object:
+
+private final AuthService authService = new AuthService();
+
+Then line 27 should be:
+
+User user = authService.login(username, password, conn);
+
+That is why the IDE reports “Cannot make a static reference…”—AuthService.login(...) tries to call an instance method through the class name.

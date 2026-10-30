@@ -1,3 +1,5 @@
+package model;
+
 public class Expense {
     private final int id;
     private final String employeeName;
