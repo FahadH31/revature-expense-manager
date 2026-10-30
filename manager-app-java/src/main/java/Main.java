@@ -1,7 +1,13 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.logging.*;
+
+import db.Database;
+import menu.Menu;
+import model.User;
 
 public class Main {
     private static final Logger LOGGER =
@@ -10,10 +16,14 @@ public class Main {
     public static void main(String[] args) {
         try {
             configureLogging();
-            LOGGER.info("Manager app started.");
-        } catch (IOException e) {
-            System.err.println(
-                    "Unable to initialize application logging.");
+            try (Connection conn = Database.connect(Database.dbPath())) {
+                Menu menu = new Menu();
+
+                User manager = menu.runLogin(conn);
+                menu.runMainMenu(manager, conn);
+            }
+        } catch (IOException | SQLException e) {
+            System.err.println("Unable to start the manager app.");
             System.exit(1);
         }
     }
