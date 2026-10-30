@@ -81,3 +81,136 @@ INSERT INTO approvals (id, expense_id, status, reviewer_id, comment, review_date
     (23, 22, 'pending', NULL, NULL, NULL),                                                                                       
     (24, 24, 'pending', NULL, NULL, NULL),                                                                                       
     (25, 25, 'pending', NULL, NULL, NULL);     
+
+
+
+2. 
+Input:
+How can I filter by status in my get_expenses method query since the status is a variable that can be provided optionally.
+
+Output:
+Add a parameter like status_filter=None:                                                                                                                             
+                                                                                                                                                                       
+    def get_expenses(user, conn, status_filter=None):                                                                                                                  
+        query = """                                                                                                                                                    
+            SELECT e.id, e.expense_date, c.name AS category, e.amount, e.description, a.status                                                                         
+            FROM expenses e                                                                                                                                            
+            JOIN categories c ON e.category_id = c.id                                                                                                                  
+            JOIN approvals a ON a.expense_id = e.id                                                                                                                    
+            WHERE e.user_id = ?                                                                                                                                        
+        """                                                                                                                                                            
+        params = [user["id"]]                                                                                                                                          
+                                                                                                                                                                       
+        if status_filter:                                                                                                                                              
+            query += " AND a.status = ?"                                                                                                                               
+            params.append(status_filter)                                                                                                                               
+                                                                                                                                                                       
+        query += " ORDER BY e.expense_date DESC"                                                                                                                       
+                                                                                                                                                                       
+        rows = conn.execute(query, params).fetchall()                                                                                                                  
+        return [dict(row) for row in rows] 
+
+
+3. 
+Input: 
+Update the run_menu option 1 branch for submitting an expense to handle each input validation separately       
+
+Output:
+while True:                                                                                                                                                    
+            # print the menu options                                                                                                                                   
+            print("Options-------------")                                                                                                                              
+            for option in options:                                                                                                                                     
+                print(option, options[option])                                                                                                                         
+            print("--------------------")                                                                                                                              
+            user_input = input("Choose an option: ").strip()                                                                                                           
+                                                                                                                                                                       
+            if user_input == "0":                                                                                                                                      
+                print("Exiting.")                                                                                                                                      
+                break                                                                                                                                                  
+            elif user_input == "1":                                                                                                                                    
+                print("Submit expense option chosen.")                                                                                                                 
+                print("--------------------")                                                                                                                          
+                                                                                                                                                                       
+                # 1. Validate amount                                                                                                                                   
+                while True:                                                                                                                                            
+                    amount = input("Enter the amount (e.g. '54.99'): ").strip()                                                                                        
+                    if validators.validate_amount(amount):                                                                                                             
+                        break                                                                                                                                          
+                    print("Invalid amount. Must be > 0 and <= 10,000.00 with up to 2 decimal places.")                                                                 
+                                                                                                                                                                       
+                # Get and print category options, then validate choice                                                                                                 
+                cat_rows = connection.execute("SELECT id, name FROM categories ORDER BY id").fetchall()                                                                
+                valid_ids = [row["id"] for row in cat_rows]                                                                                                            
+                print("\nAvailable Categories:")                                                                                                                       
+                for cat in cat_rows:                                                                                                                                   
+                    print(f"  {cat['id']}. {cat['name']}")                                                                                                             
+                                                                                                                                                                       
+                while True:                                                                                                                                            
+                    category = input("Enter the ID of expense category (e.g. '3'): ").strip()                                                                          
+                    if validators.validate_category(category, valid_ids):                                                                                              
+                        break                                                                                                                                          
+                    print(f"Invalid category ID. Must be one of: {valid_ids}.")                                                                                        
+                                                                                                                                                                       
+                # 2. Validate description                                                                                                                              
+                while True:                                                                                                                                            
+                    description = input("Enter a description (max 200 chars): ").strip()                                                                               
+                    if validators.validate_description(description):                                                                                                   
+                        break                                                                                                                                          
+                    print("Invalid description. Entry must be between 1 and 200 characters.")                                                                          
+                                                                                                                                                                       
+                # 3. Validate expense date                                                                                                                             
+                while True:                                                                                                                                            
+                    expense_date = input("Enter the date of the expense (YYYY-MM-DD). If the date is today, hit enter: ").strip()                                      
+                    if validators.validate_date(expense_date):                                                                                                         
+                        break                                                                                                                                          
+                    print("Invalid date. Must follow YYYY-MM-DD format and cannot be in the future or older than 90 days.")                                            
+                                                                                                                                                                       
+                new_id = submit_expense(user, amount, category, description, expense_date, connection)                                                                 
+                print(f"Successfully submitted expense with ID: {new_id}")                                                                                             
+                                                                                                                                                                       
+            elif user_input == "2":                                                                                                                                    
+                print("Get expenses option chosen.")                                                                                                                   
+                print("--------------------")                                                                                                                          
+                status_filter = input("Enter a status to filter by (leave blank for no filter): ").strip().lower()                                                     
+                if not status_filter:                                                                                                                                  
+                    status_filter = None                                                                                                                               
+                                                                                                                                                                       
+                expenses = get_expenses(user, connection, status_filter)                                                                                               
+                if not expenses:                                                                                                                                       
+                    print("No expenses found.")                                                                                                                        
+                else:                                                                                                                                                  
+                    print(f"\n{'ID':<5} | {'Date':<12} | {'Category':<16} | {'Amount':<10} | {'Status':<10} | {'Description'}")                                        
+                    print("-" * 75)                                                                                                                                    
+                    for exp in expenses:                                                                                                                               
+                        print(f"{exp['id']:<5} | {exp['expense_date']:<12} | {exp['category']:<16} | ${exp['amount']:<9.2f} | {exp['status']:<10} |                    
+                        {exp['description']}")                                                                                                                         
+                                                                                                                                                                       
+            else:                                                                                                                                                      
+                print("Invalid choice. Please try again.")                                                                                                             
+                continue 
+
+4.
+Input: is there a better way to organize the menu and have it more readable? to create the separating lines with some shortcut?
+
+Output:
+
+Yes! Python gives you some very clean tricks to make CLI menus look polished, organized, and much easier to read.                                                    
+                                                                                                                                                                       
+  Here is the best way to clean this up:                                                                                                                             
+  ──────                                                                                                                                                               
+  Python String Multiplication for Separating Lines (The Shortcut)                                                                                              
+                                                                                                                                                                       
+  Instead of typing out "--------------------", you can multiply any string by a number:                                                                               
+                                                                                                                                                                       
+    print("-" * 40)   # prints: ----------------------------------------                                                                                               
+    print("=" * 40)   # prints: ========================================                                                                                               
+                                                                                                                                                                       
+  You can even create a simple reusable helper or constant at the top of menu.py:                                                                                      
+                                                                                                                                                                       
+    DIVIDER = "-" * 40                                                                                                                                                 
+    HEADER_LINE = "=" * 40                                                                                                                                             
+                                                                                                                                                                       
+  Then anywhere in your code, you just write:                                                                                                                          
+                                                                                                                                                                       
+    print(DIVIDER)                                                                                                                                                     
+  
