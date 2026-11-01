@@ -69,15 +69,17 @@ public class Menu {
                             System.out.println("No pending expenses found.");
                         } else {
                             System.out.println("Pending Expenses:");
+                            System.out.printf("\n%-4s | %-16s | %-10s | %-16s | %-10s | %s%n",
+                                    "ID", "Employee", "Date", "Category", "Amount", "Description");
+                            System.out.println("-".repeat(95));
                             for (var expense : expenses) {
-                                System.out.printf("ID: %d, Employee: %s, Date: %s, Category: %s, Amount: %.2f, Description: %s, Status: %s%n",
+                                System.out.printf("%-4d | %-16s | %-10s | %-16s | $%-9.2f | %s%n",
                                         expense.getId(),
                                         expense.getEmployeeName(),
                                         expense.getExpenseDate(),
                                         expense.getCategory(),
                                         expense.getAmount(),
-                                        expense.getDescription(),
-                                        expense.getStatus());
+                                        expense.getDescription());
                             }
                         }
                     } catch (Exception e) {

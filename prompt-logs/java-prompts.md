@@ -301,4 +301,52 @@ approvalDao.saveDecision(expenseId, finalStatus, manager.getId(), commentToSave,
 * `LocalDate.now().toString()` produces the ISO `"YYYY-MM-DD"` date string expected by the SQLite schema.
 * Finally, it hands off all 5 parameters to the DAO to execute the SQL `UPDATE`.
 
+<br><br>
+---
+<br><br>
+Prompt: can you make the menu output of 1.list expenses option more readable, separate with dashes and present as a table
+
+Output:
+### Before vs. After
+
+#### Current (Messy line-wrap):
+```text
+ID: 6, Employee: Test Employee 1, Date: 2026-10-23, Category: Meals, Amount: 47.80, Description: Team lunch after sprint review – 4 attendees, Status: pending
+ID: 13, Employee: Test Employee 2, Date: 2026-10-18, Category: Office Supplies, Amount: 54.25, Description: USB-C hub and cable set for remote work setup, Status: pending
+```
+
+#### Improved (Clean Tabular View):
+```text
+ID   | Employee         | Date       | Category         | Amount     | Description
+---------------------------------------------------------------------------------------------------------
+6    | Test Employee 1  | 2026-10-23 | Meals            | $47.80     | Team lunch after sprint review – 4 attendees
+13   | Test Employee 2  | 2026-10-18 | Office Supplies  | $54.25     | USB-C hub and cable set for remote work setup
+```
+
+---
+
+### How to apply it
+
+In Menu.java, you can replace lines inside `case "1":` with this aligned table format:
+
+```java
+                            System.out.printf("\n%-4s | %-16s | %-10s | %-16s | %-10s | %s%n",
+                                    "ID", "Employee", "Date", "Category", "Amount", "Description");
+                            System.out.println("-".repeat(95));
+                            for (var expense : expenses) {
+                                System.out.printf("%-4d | %-16s | %-10s | %-16s | $%-9.2f | %s%n",
+                                        expense.getId(),
+                                        expense.getEmployeeName(),
+                                        expense.getExpenseDate(),
+                                        expense.getCategory(),
+                                        expense.getAmount(),
+                                        expense.getDescription());
+                            }
+```
+
+* `%-4s` left-aligns strings to a specific character width.
+* `$%-9.2f` formats the currency with a dollar sign and fixed 2 decimal places.
+* `"-".repeat(95)` generates an underline separating headers from rows.
+
+
 
