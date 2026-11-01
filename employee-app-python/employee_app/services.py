@@ -170,6 +170,26 @@ def delete_expense(user: dict, expense_id: int, conn):
     logger.info("Expense %s deleted by user '%s'.", expense_id, user["username"])
     return True
 
+def get_review_history(user: dict, conn) -> list[dict]:
+    rows = conn.execute(
+        """
+        SELECT e.id, e.expense_date, c.name AS category, e.amount, e.description,
+               a.status,
+               COALESCE(NULLIF(TRIM(a.comment), ''), '(no comment)') AS comment,
+               u.full_name AS reviewer_name, a.review_date
+        FROM expenses e
+        JOIN categories c ON e.category_id = c.id
+        JOIN approvals a ON a.expense_id = e.id
+        LEFT JOIN users u ON a.reviewer_id = u.id
+        WHERE e.user_id = ? AND a.status IN ('approved', 'denied')
+        ORDER BY a.review_date DESC
+        """,
+        (user["id"],),
+    ).fetchall()
+    
+    return [dict(row) for row in rows]
+
+
 def get_validated_input(prompt, current_value, validator, error_message, convert=str):
     while True:
         raw = input(f"{prompt} [{current_value}]: ").strip()
