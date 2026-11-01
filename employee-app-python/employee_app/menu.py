@@ -1,6 +1,6 @@
 import validators
-from services import login, submit_expense, get_expenses
-from exceptions import AuthenticationError, AuthorizationError
+from services import login, submit_expense, get_expenses, edit_expense, delete_expense
+from exceptions import AuthenticationError, AuthorizationError, InvalidStateError, NotFoundError
 
 
 HEADER_DIVIDER = "=" * 60
@@ -110,6 +110,40 @@ def run_menu(user, connection):
                 print("-" * 100)                                                                                                                                    
                 for exp in expenses:                                                                                                                               
                     print(f"{exp['id']:<5} | {exp['expense_date']:<12} | {exp['category']:<16} | ${exp['amount']:<9.2f} | {exp['status']:<10} | {exp['description']}")                                                                                                                                            
+        
+        elif user_input == "3":
+            print("Edit pending expense option chosen.")
+
+            while True:
+                raw_expense_id = input("Enter the expense ID to edit: ").strip()
+                if raw_expense_id.isdigit() and int(raw_expense_id) > 0:
+                    expense_id = int(raw_expense_id)
+                    break
+                print("Invalid expense ID. Enter a positive whole number.")
+
+            try:
+                edit_expense(user, expense_id, connection)
+                print(f"Expense {expense_id} updated successfully.")
+            except (NotFoundError, AuthorizationError, InvalidStateError) as error:
+                print(error)
+        elif user_input == "4":
+            print("Delete pending expense option chosen.")
+
+            while True:
+                raw_expense_id = input("Enter the expense ID to delete: ").strip()
+                if raw_expense_id.isdigit() and int(raw_expense_id) > 0:
+                    expense_id = int(raw_expense_id)
+                    break
+                print("Invalid expense ID. Enter a positive whole number.")
+
+            try:
+                deleted = delete_expense(user, expense_id, connection)
+                if deleted:
+                    print(f"Expense {expense_id} deleted successfully.")
+                else:
+                    print("Deletion cancelled.")
+            except (NotFoundError, AuthorizationError, InvalidStateError) as error:
+                print(error)
         else:                                                                                                                                                      
             print("Invalid choice. Please try again.")                                                                                                             
             continue                    
