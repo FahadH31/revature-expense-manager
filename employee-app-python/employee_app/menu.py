@@ -1,17 +1,6 @@
 import validators
-from services import (
-    login,
-    submit_expense,
-    get_expenses,
-    edit_expense,
-    delete_expense,
-)
-from exceptions import (
-    AuthenticationError,
-    AuthorizationError,
-    InvalidStateError,
-    NotFoundError,
-)
+from services import login, submit_expense, get_expenses, edit_expense, delete_expense
+from exceptions import AuthenticationError, AuthorizationError, InvalidStateError, NotFoundError
 
 
 HEADER_DIVIDER = "=" * 60
