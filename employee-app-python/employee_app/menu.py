@@ -1,5 +1,5 @@
 import validators
-from services import login, submit_expense, get_expenses, edit_expense, delete_expense
+from services import login, submit_expense, get_expenses, edit_expense, delete_expense, get_review_history
 from exceptions import AuthenticationError, AuthorizationError, InvalidStateError, NotFoundError
 
 
@@ -144,6 +144,26 @@ def run_menu(user, connection):
                     print("Deletion cancelled.")
             except (NotFoundError, AuthorizationError, InvalidStateError) as error:
                 print(error)
+
+        elif user_input == "5":
+            print("Review history option chosen.")
+
+            history = get_review_history(user, connection)
+            if not history:
+                print("No review history found.")
+            else:
+                print(
+                    f"\n{'Status':<10} | {'Reviewer':<25} | "
+                    f"{'Review date':<12} | Comment"
+                )
+                print("-" * 85)
+                for review in history:
+                    print(
+                        f"{review['status']:<10} | "
+                        f"{review['reviewer_name']:<25} | "
+                        f"{review['review_date']:<12} | "
+                        f"{review['comment']}"
+                    )
         else:                                                                                                                                                      
             print("Invalid choice. Please try again.")                                                                                                             
             continue                    
