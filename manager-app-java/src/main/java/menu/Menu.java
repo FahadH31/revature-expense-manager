@@ -1,16 +1,20 @@
 package menu;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Scanner;
 import exceptions.AuthenticationException;
 import exceptions.AuthorizationException;
+import exceptions.ExpenseManagerException;
 import model.User;
 import services.AuthService;
+import services.ApprovalService;
 import dao.ExpenseDao;
 
 public class Menu {
     private final Scanner scanner = new Scanner(System.in);
     private final AuthService authService = new AuthService();
+    private final ApprovalService approvalService = new ApprovalService();
     // also hold references to your services
 
     public User runLogin(Connection conn) {
@@ -81,8 +85,33 @@ public class Menu {
                     }   
                     break;
                 case "2":
-                    // Will add functionality to review an expense later
-                    System.out.println("Review an expense selected.");
+                    System.out.print("Enter expense ID: ");
+                    String idInput = scanner.nextLine().trim();
+                    int expenseId;
+                    try {
+                        expenseId = Integer.parseInt(idInput);
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid expense ID. Must be a number.");
+                        break;
+                    }
+
+                    System.out.print("Approve (a) or Deny (d): ");
+                    String decision = scanner.nextLine().trim();
+
+                    System.out.print("Enter comment: ");
+                    String comment = scanner.nextLine().trim();
+
+                    try {
+                        approvalService.decide(manager, expenseId, decision, comment, conn);
+                        String action = (decision.equalsIgnoreCase("a") || decision.equalsIgnoreCase("approved"))
+                                ? "approved"
+                                : "denied";
+                        System.out.println("Expense #" + expenseId + " successfully " + action + ".");
+                    } catch (ExpenseManagerException e) {
+                        System.out.println(e.getMessage());
+                    } catch (SQLException e) {
+                        System.out.println("Database error: " + e.getMessage());
+                    }
                     break;
                 case "3":
                     // Will add functionality to generate reports later
