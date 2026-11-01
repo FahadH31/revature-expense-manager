@@ -1,6 +1,12 @@
 import logging
 import validators
-from exceptions import AuthenticationError, AuthorizationError, ValidationError
+from exceptions import (
+    AuthenticationError,
+    AuthorizationError,
+    InvalidStateError,
+    NotFoundError,
+    ValidationError,
+)
 from datetime import date, datetime
 
 logger = logging.getLogger(__name__)
@@ -88,4 +94,90 @@ def get_expenses(user, conn, status_filter=None):
         rows = conn.execute(query, params).fetchall()                                                                                                                  
         return [dict(row) for row in rows] 
 
+def edit_expense(user: dict, expense_id: int, conn):
+    row = conn.execute(
+        """
+        SELECT e.id, e.user_id, e.category_id, e.amount,
+               e.description, e.expense_date, a.status
+        FROM expenses e
+        JOIN approvals a ON a.expense_id = e.id
+        WHERE e.id = ?
+        """,
+        (expense_id,),
+    ).fetchone()
 
+    if row is None:
+        raise NotFoundError("Expense not found.")
+    if row["user_id"] != user["id"]:
+        raise AuthorizationError("You are not authorized to edit this expense.")
+    if row["status"] != "pending":
+        raise InvalidStateError("Expense is no longer pending.")
+
+    categories = conn.execute(
+        "SELECT id, name FROM categories ORDER BY id"
+    ).fetchall()
+
+    valid_category_ids = [c["id"] for c in categories]
+
+    amount = get_validated_input("Amount", row["amount"],validators.validate_amount,"Invalid amount. Value must be between 0.01-10,000.00.",float)
+
+    print("Categories:", ", ".join(f"{c['id']}: {c['name']}" for c in categories))
+
+    category_id = get_validated_input("Category", row["category_id"], lambda x: validators.validate_category(x, valid_category_ids), "Invalid category. Choose a category from the list.",int)
+
+    description = get_validated_input("Description", row["description"], validators.validate_description,"Invalid description. Entry must be between 1-200 chars.")
+
+    expense_date = get_validated_input("Expense date", row["expense_date"], validators.validate_date, "Invalid date. Use YYYY-MM-DD within the allowed date range.")
+
+    conn.execute(
+        """
+        UPDATE expenses
+        SET category_id = ?, amount = ?, description = ?, expense_date = ?
+        WHERE id = ?
+        """,
+        (category_id, amount, description, expense_date, expense_id),
+    )
+
+    logger.info("Expense %s edited by user '%s'.", expense_id, user["username"])
+    return expense_id
+
+def delete_expense(user: dict, expense_id: int, conn):
+    row = conn.execute(
+        """
+        SELECT e.id, e.user_id, a.status
+        FROM expenses e
+        JOIN approvals a ON a.expense_id = e.id
+        WHERE e.id = ?
+        """,
+        (expense_id,),
+    ).fetchone()
+
+    if row is None:
+        raise NotFoundError("Expense not found.")
+    if row["user_id"] != user["id"]:
+        raise AuthorizationError("You are not authorized to delete this expense.")
+    if row["status"] != "pending":
+        raise InvalidStateError("Expense is no longer pending.")
+
+    confirmation = input("Are you sure? (y/N): ").strip()
+    if confirmation.lower() != "y":
+        return False
+
+    with conn:
+        conn.execute("DELETE FROM approvals WHERE expense_id = ?", (expense_id,))
+        conn.execute("DELETE FROM expenses WHERE id = ?", (expense_id,))
+
+    logger.info("Expense %s deleted by user '%s'.", expense_id, user["username"])
+    return True
+
+def get_validated_input(prompt, current_value, validator, error_message, convert=str):
+    while True:
+        raw = input(f"{prompt} [{current_value}]: ").strip()
+
+        if not raw:
+            return current_value
+
+        if validator(raw):
+            return convert(raw)
+
+        print(error_message)
