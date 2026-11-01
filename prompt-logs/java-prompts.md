@@ -70,3 +70,283 @@ Then line 27 should be:
 User user = authService.login(username, password, conn);
 
 That is why the IDE reports “Cannot make a static reference…”—AuthService.login(...) tries to call an instance method through the class name.
+
+## 2026-11-01 (Fahad)
+Prompt: Review my implementation of ApprovalDao.java for correctness, and complete the decide() function for me in ApprovalService.java (give me a full easy to understand explanation of your code and why, in the context that I am more familiar with python)
+
+Output:
+### 1. Code Review of `ApprovalDao.java`
+
+Your DAO has the right general idea, but there are a few syntax, typing, and JDBC bugs preventing it from compiling and running:
+
+#### Issues in `findStatus()`:
+1. **Wrong type on parameter**: `statement.setString(1, expenseId);` — In Java (unlike Python), types are strictly checked. `expenseId` is an `int`, so you must use `statement.setInt(1, expenseId)`.
+2. **Missing semicolon**: Line 24 `return resultSet.getString("status")` is missing a `;`.
+
+#### Issues in `saveDecision()`:
+3. **SQL syntax error (extra comma)**:
+   ```sql
+   SET status = ?, reviewer_id = ?, comment = ?, review_date = ?, WHERE expense_id = ?
+   --                                                            ^ Trailing comma before WHERE
+   ```
+4. **Missing semicolon**: Line 33 missing a `;` after `"""`.
+5. **Wrong types on parameters**:
+   * Line 37: `reviewerId` is an `int` ➔ `statement.setInt(2, reviewerId)`.
+   * Line 40: You wrote `statement.setString(5, conn)`. The 5th placeholder is `WHERE expense_id = ?`, and `conn` is the database connection object. It should be `statement.setInt(5, expenseId)`.
+6. **`executeQuery()` vs `executeUpdate()` & return type mismatch**:
+   * `executeQuery()` is **only** for `SELECT` queries that produce a `ResultSet`.
+   * `UPDATE`, `INSERT`, and `DELETE` queries must use `statement.executeUpdate()`.
+   * The method return type is `void`, but the inner block attempts to `return resultSet.getString("status")` and `return null`, which is a compiler error.
+
+---
+
+#### Corrected `ApprovalDao.java`
+
+You can update ApprovalDao.java with this:
+
+```java
+package dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+public class ApprovalDao {
+
+    public String findStatus(int expenseId, Connection conn) throws SQLException {
+        String sql = """
+            SELECT status
+            FROM approvals
+            WHERE expense_id = ?
+            """;
+
+        try (PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.setInt(1, expenseId);
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    return null;
+                }
+                return resultSet.getString("status");
+            }
+        }
+    }
+
+    public void saveDecision(int expenseId, String status, int reviewerId,
+                             String comment, String reviewDate, Connection conn) throws SQLException {
+        String sql = """
+            UPDATE approvals
+            SET status = ?, reviewer_id = ?, comment = ?, review_date = ?
+            WHERE expense_id = ?
+            """;
+
+        try (PreparedStatement statement = conn.prepareStatement(sql)) {
+            statement.setString(1, status);
+            statement.setInt(2, reviewerId);
+            statement.setString(3, comment);
+            statement.setString(4, reviewDate);
+            statement.setInt(5, expenseId);
+
+            statement.executeUpdate();
+        }
+    }
+}
+```
+
+---
+
+### 2. Complete Implementation of `ApprovalService.java`
+
+Here is the complete implementation for ApprovalService.java
+
+```java
+package services;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import dao.ApprovalDao;
+import exceptions.AuthorizationException;
+import exceptions.InvalidStateException;
+import exceptions.NotFoundException;
+import exceptions.ValidationException;
+import model.User;
+
+public class ApprovalService {
+    private final ApprovalDao approvalDao;
+
+    public ApprovalService() {
+        this(new ApprovalDao());
+    }
+
+    public ApprovalService(ApprovalDao approvalDao) {
+        this.approvalDao = approvalDao;
+    }
+
+    public void decide(User manager, int expenseId, String decision,
+                       String comment, Connection conn) throws SQLException {
+        // 1. Authorization: Only a user with the 'manager' role can approve or deny
+        if (manager == null || !"manager".equalsIgnoreCase(manager.getRole())) {
+            throw new AuthorizationException("User is not authorized to review expenses.");
+        }
+
+        // 2. Existence & Status: Query database for current status
+        String currentStatus = approvalDao.findStatus(expenseId, conn);
+        if (currentStatus == null) {
+            throw new NotFoundException("Expense with ID " + expenseId + " not found.");
+        }
+        if (!"pending".equalsIgnoreCase(currentStatus)) {
+            throw new InvalidStateException("Expense is no longer pending.");
+        }
+
+        // 3. Decision Validation: Normalize input to 'approved' or 'denied'
+        String cleanDecision = decision == null ? "" : decision.trim().toLowerCase();
+        String finalStatus;
+        if ("a".equals(cleanDecision) || "approved".equals(cleanDecision)) {
+            finalStatus = "approved";
+        } else if ("d".equals(cleanDecision) || "denied".equals(cleanDecision)) {
+            finalStatus = "denied";
+        } else {
+            throw new ValidationException("Decision must be 'a' (approve) or 'd' (deny).");
+        }
+
+        // 4. Comment Validation (VR-05 & VR-06)
+        String trimmedComment = comment == null ? "" : comment.trim();
+        if ("denied".equals(finalStatus)) {
+            if (trimmedComment.length() < 5 || trimmedComment.length() > 200) {
+                throw new ValidationException("Denial requires a comment between 5 and 200 characters.");
+            }
+        } else {
+            // Approvals: comment is optional, but if provided cannot exceed 200 chars
+            if (trimmedComment.length() > 200) {
+                throw new ValidationException("Comment cannot exceed 200 characters.");
+            }
+        }
+
+        // If empty on approval, persist null so database reflects an empty comment cleanly
+        String commentToSave = trimmedComment.isEmpty() ? null : trimmedComment;
+
+        // 5. Date generation (YYYY-MM-DD format)
+        String reviewDate = LocalDate.now().toString();
+
+        // 6. Persist to database
+        approvalDao.saveDecision(expenseId, finalStatus, manager.getId(), commentToSave, reviewDate, conn);
+    }
+}
+```
+
+---
+
+### 3. Step-by-Step Explanation (Coming from Python)
+
+#### Constructors & Dependency Injection
+```java
+public ApprovalService() {
+    this(new ApprovalDao());
+}
+
+public ApprovalService(ApprovalDao approvalDao) {
+    this.approvalDao = approvalDao;
+}
+```
+* In Python, you might write `def __init__(self, approval_dao=None): self.approval_dao = approval_dao or ApprovalDao()`.
+* In Java, constructor chaining (`this(...)`) allows normal code to call `new ApprovalService()` while unit tests in Phase 2 can inject a mock DAO: `new ApprovalService(mockDao)`.
+
+#### Step 1: Authorization Check (`FR-A4`)
+```java
+if (manager == null || !"manager".equalsIgnoreCase(manager.getRole())) {
+    throw new AuthorizationException("User is not authorized to review expenses.");
+}
+```
+* **Why**: The project plan specifically states that even if the CLI menu only lets managers click "Review", business logic must never trust the UI. If a non-manager object is passed into `decide()`, it immediately throws `AuthorizationException`.
+* `equalsIgnoreCase()` avoids issues if the database role is `"Manager"` vs `"manager"`.
+
+#### Step 2: Existence & State Verification (`US-M3`)
+```java
+String currentStatus = approvalDao.findStatus(expenseId, conn);
+if (currentStatus == null) {
+    throw new NotFoundException("Expense with ID " + expenseId + " not found.");
+}
+if (!"pending".equalsIgnoreCase(currentStatus)) {
+    throw new InvalidStateException("Expense is no longer pending.");
+}
+```
+* `findStatus` returns `null` if the row doesn't exist ➔ throws `NotFoundException`.
+* If it returns `"approved"` or `"denied"` ➔ throws `InvalidStateException`. This protects against race conditions (e.g. two managers trying to review the same expense at the same time).
+
+#### Step 3: Normalizing Decision Input
+```java
+String cleanDecision = decision == null ? "" : decision.trim().toLowerCase();
+```
+* Users may type `"a"`, `"A"`, `"d"`, or `"D"`. Handling `null` first prevents a `NullPointerException` (Java's equivalent of `AttributeError: 'NoneType' object has no attribute 'lower'`).
+
+#### Step 4: Comment Validation Rules (`VR-05` and `VR-06`)
+```java
+String trimmedComment = comment == null ? "" : comment.trim();
+if ("denied".equals(finalStatus)) {
+    if (trimmedComment.length() < 5 || trimmedComment.length() > 200) {
+        throw new ValidationException("Denial requires a comment between 5 and 200 characters.");
+    }
+}
+```
+* **Denials**: A manager cannot reject an employee's money without explaining why (minimum 5 chars, max 200).
+* **Approvals**: Comments are optional. If skipped, `commentToSave` becomes `null`, matching SQLite's `NULL` for empty comments.
+
+#### Step 5 & 6: Date & Persistence
+```java
+String reviewDate = LocalDate.now().toString();
+approvalDao.saveDecision(expenseId, finalStatus, manager.getId(), commentToSave, reviewDate, conn);
+```
+* `LocalDate.now().toString()` produces the ISO `"YYYY-MM-DD"` date string expected by the SQLite schema.
+* Finally, it hands off all 5 parameters to the DAO to execute the SQL `UPDATE`.
+
+<br><br>
+---
+<br><br>
+Prompt: can you make the menu output of 1.list expenses option more readable, separate with dashes and present as a table
+
+Output:
+### Before vs. After
+
+#### Current (Messy line-wrap):
+```text
+ID: 6, Employee: Test Employee 1, Date: 2026-10-23, Category: Meals, Amount: 47.80, Description: Team lunch after sprint review – 4 attendees, Status: pending
+ID: 13, Employee: Test Employee 2, Date: 2026-10-18, Category: Office Supplies, Amount: 54.25, Description: USB-C hub and cable set for remote work setup, Status: pending
+```
+
+#### Improved (Clean Tabular View):
+```text
+ID   | Employee         | Date       | Category         | Amount     | Description
+---------------------------------------------------------------------------------------------------------
+6    | Test Employee 1  | 2026-10-23 | Meals            | $47.80     | Team lunch after sprint review – 4 attendees
+13   | Test Employee 2  | 2026-10-18 | Office Supplies  | $54.25     | USB-C hub and cable set for remote work setup
+```
+
+---
+
+### How to apply it
+
+In Menu.java, you can replace lines inside `case "1":` with this aligned table format:
+
+```java
+                            System.out.printf("\n%-4s | %-16s | %-10s | %-16s | %-10s | %s%n",
+                                    "ID", "Employee", "Date", "Category", "Amount", "Description");
+                            System.out.println("-".repeat(95));
+                            for (var expense : expenses) {
+                                System.out.printf("%-4d | %-16s | %-10s | %-16s | $%-9.2f | %s%n",
+                                        expense.getId(),
+                                        expense.getEmployeeName(),
+                                        expense.getExpenseDate(),
+                                        expense.getCategory(),
+                                        expense.getAmount(),
+                                        expense.getDescription());
+                            }
+```
+
+* `%-4s` left-aligns strings to a specific character width.
+* `$%-9.2f` formats the currency with a dollar sign and fixed 2 decimal places.
+* `"-".repeat(95)` generates an underline separating headers from rows.
+
+
+
