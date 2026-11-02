@@ -2,19 +2,23 @@ package menu;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Scanner;
 import exceptions.AuthenticationException;
 import exceptions.AuthorizationException;
 import exceptions.ExpenseManagerException;
+import model.ReportRow;
 import model.User;
 import services.AuthService;
 import services.ApprovalService;
+import services.ReportService;
 import dao.ExpenseDao;
 
 public class Menu {
     private final Scanner scanner = new Scanner(System.in);
     private final AuthService authService = new AuthService();
     private final ApprovalService approvalService = new ApprovalService();
+    private final ReportService reportService = new ReportService();
     // also hold references to your services
 
     public User runLogin(Connection conn) {
@@ -116,8 +120,56 @@ public class Menu {
                     }
                     break;
                 case "3":
-                    // Will add functionality to generate reports later
-                    System.out.println("Reports selected.");
+                    System.out.println("\nSelect Report:");
+                    System.out.println("1. Spending by Employee");
+                    System.out.println("2. Spending by Category");
+                    System.out.print("Choose an option: ");
+                    String reportChoice = scanner.nextLine().trim();
+
+                    List<ReportRow> reportRows = null;
+                    String reportType = null;
+                    String headerLabel = null;
+
+                    try {
+                        if ("1".equals(reportChoice)) {
+                            reportRows = reportService.getReportByEmployee(manager, conn);
+                            reportType = "employee";
+                            headerLabel = "Employee";
+                        } else if ("2".equals(reportChoice)) {
+                            reportRows = reportService.getReportByCategory(manager, conn);
+                            reportType = "category";
+                            headerLabel = "Category";
+                        } else {
+                            System.out.println("Invalid report option.");
+                            break;
+                        }
+
+                        if (reportRows.isEmpty()) {
+                            System.out.println("No expense data available for this report.");
+                            break;
+                        }
+
+                        System.out.printf("\n%-20s | %-5s | %-12s | %-14s%n",
+                                headerLabel, "Count", "Total Amount", "Total Approved");
+                        System.out.println("-".repeat(60));
+                        for (ReportRow row : reportRows) {
+                            System.out.printf("%-20s | %-5d | $%-11.2f | $%-13.2f%n",
+                                    row.getName(),
+                                    row.getCount(),
+                                    row.getTotalAmount(),
+                                    row.getTotalApprovedAmount());
+                        }
+
+                        System.out.print("\nExport this report to CSV? (y/n): ");
+                        String exportChoice = scanner.nextLine().trim();
+                        if ("y".equalsIgnoreCase(exportChoice)) {
+                            reportService.exportToCsv(reportRows, reportType);
+                        }
+                    } catch (ExpenseManagerException e) {
+                        System.out.println(e.getMessage());
+                    } catch (SQLException e) {
+                        System.out.println("Database error: " + e.getMessage());
+                    }
                     break;
                 case "0": {
                     System.out.println("Goodbye.");
