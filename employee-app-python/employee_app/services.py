@@ -29,6 +29,7 @@ def login(username: str, password: str, conn) -> dict:
         raise AuthenticationError("Invalid username or password.")
 
     if row["role"] != "employee":
+        logger.warning("Unauthorized login attempt for username: %s", username)
         raise AuthorizationError("This account does not have access to this app.")
 
     logger.info("User '%s' logged in successfully.", username)
@@ -45,12 +46,16 @@ def submit_expense(user, amount, category_id, description, expense_date, conn):
 
     # raise exceptions but don't handle them here 
     if not validators.validate_amount(amount):
+        logger.warning("Expense submission rejected for user '%s': invalid amount.", user["username"])
         raise ValidationError("Invalid amount entered. Value must be between 0.01-10,000.00.")
     elif not validators.validate_category(category_id, valid_ids):
+        logger.warning("Expense submission rejected for user '%s': invalid category.", user["username"])
         raise ValidationError("Invalid category entered. Value must be between 0-6.")
     elif not validators.validate_description(description):
+        logger.warning("Expense submission rejected for user '%s': invalid description.", user["username"])
         raise ValidationError("Invalid description entered. Entry must be between 1-200 chars.")
     elif not validators.validate_date(expense_date):
+        logger.warning("Expense submission rejected for user '%s': invalid date.", user["username"])
         raise ValidationError("Invalid expense date entered. Must follow YYYY-MM-DD format and cannot be a future value or more than 90 days ago.")
 
     # if empty date, resolve to today's date
@@ -73,6 +78,7 @@ def submit_expense(user, amount, category_id, description, expense_date, conn):
         (expense_id, 'pending')
     )
 
+    logger.info("Expense %s submitted by user '%s'.", expense_id, user["username"])
     return expense_id
 
 def get_expenses(user, conn, status_filter=None):                                                                                                                  
@@ -107,10 +113,13 @@ def edit_expense(user: dict, expense_id: int, conn):
     ).fetchone()
 
     if row is None:
+        logger.warning("Edit failed for user '%s': expense %s not found.", user["username"], expense_id)
         raise NotFoundError("Expense not found.")
     if row["user_id"] != user["id"]:
+        logger.warning("Unauthorized edit attempt by user '%s' for expense %s.", user["username"], expense_id)
         raise AuthorizationError("You are not authorized to edit this expense.")
     if row["status"] != "pending":
+        logger.warning("Edit rejected for user '%s': expense %s is not pending.", user["username"], expense_id)
         raise InvalidStateError("Expense is no longer pending.")
 
     categories = conn.execute(
@@ -153,14 +162,18 @@ def delete_expense(user: dict, expense_id: int, conn):
     ).fetchone()
 
     if row is None:
+        logger.warning("Delete failed for user '%s': expense %s not found.", user["username"], expense_id)
         raise NotFoundError("Expense not found.")
     if row["user_id"] != user["id"]:
+        logger.warning("Unauthorized delete attempt by user '%s' for expense %s.", user["username"], expense_id)
         raise AuthorizationError("You are not authorized to delete this expense.")
     if row["status"] != "pending":
+        logger.warning("Delete rejected for user '%s': expense %s is not pending.", user["username"], expense_id)
         raise InvalidStateError("Expense is no longer pending.")
 
     confirmation = input("Are you sure? (y/N): ").strip()
     if confirmation.lower() != "y":
+        logger.info("Deletion cancelled by user '%s' for expense %s.", user["username"], expense_id)
         return False
 
     with conn:

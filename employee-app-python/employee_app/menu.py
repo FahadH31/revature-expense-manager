@@ -1,6 +1,9 @@
+import logging
 import validators
 from services import login, submit_expense, get_expenses, edit_expense, delete_expense, get_review_history
 from exceptions import AuthenticationError, AuthorizationError, InvalidStateError, NotFoundError
+
+logger = logging.getLogger(__name__)
 
 
 HEADER_DIVIDER = "=" * 60
@@ -24,9 +27,11 @@ def run_login(connection):
             print(f"Welcome, {user['full_name']}")              # need to print full name from DB here.
             return user                                         # return the row for next loop execution from main.py
         except AuthorizationError as error:
+            logger.warning("Login authorization failed: %s", error)
             print(error)
             exit(0)
         except AuthenticationError as error: 
+            logger.warning("Login authentication failed after a credential check.")
             print(error)
             attempts += 1
     
@@ -125,6 +130,7 @@ def run_menu(user, connection):
                 edit_expense(user, expense_id, connection)
                 print(f"Expense {expense_id} updated successfully.")
             except (NotFoundError, AuthorizationError, InvalidStateError) as error:
+                logger.warning("Edit request failed for user '%s': %s", user["username"], error)
                 print(error)
         elif user_input == "4":
             print("Delete pending expense option chosen.")
@@ -143,6 +149,7 @@ def run_menu(user, connection):
                 else:
                     print("Deletion cancelled.")
             except (NotFoundError, AuthorizationError, InvalidStateError) as error:
+                logger.warning("Delete request failed for user '%s': %s", user["username"], error)
                 print(error)
 
         elif user_input == "5":
