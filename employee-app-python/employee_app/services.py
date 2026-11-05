@@ -65,18 +65,18 @@ def submit_expense(user, amount, category_id, description, expense_date, conn):
     # get today's date + time
     current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    expense = conn.execute(
-        "INSERT INTO expenses(user_id, category_id, amount, description, expense_date, created_at) " 
-        "VALUES(?, ?, ?, ?, ?, ?)",
-        (user["id"], category_id, amount, description, expense_date, current_date)
-    )
-    expense_id = expense.lastrowid      # get the expense id so it can be inserted in approvals table
+    with conn:
+        expense = conn.execute(
+            "INSERT INTO expenses(user_id, category_id, amount, description, expense_date, created_at) "
+            "VALUES(?, ?, ?, ?, ?, ?)",
+            (user["id"], category_id, amount, description, expense_date, current_date)
+        )
+        expense_id = expense.lastrowid
 
-    approval = conn.execute(
-        "INSERT INTO approvals(expense_id, status )"
-        "VALUES(?, ?)",
-        (expense_id, 'pending')
-    )
+        conn.execute(
+            "INSERT INTO approvals(expense_id, status) VALUES(?, ?)",
+            (expense_id, "pending")
+        )
 
     logger.info("Expense %s submitted by user '%s'.", expense_id, user["username"])
     return expense_id
@@ -137,15 +137,15 @@ def edit_expense(user: dict, expense_id: int, conn):
     description = get_validated_input("Description", row["description"], validators.validate_description,"Invalid description. Entry must be between 1-200 chars.")
 
     expense_date = get_validated_input("Expense date", row["expense_date"], validators.validate_date, "Invalid date. Use YYYY-MM-DD within the allowed date range.")
-
-    conn.execute(
-        """
-        UPDATE expenses
-        SET category_id = ?, amount = ?, description = ?, expense_date = ?
-        WHERE id = ?
-        """,
-        (category_id, amount, description, expense_date, expense_id),
-    )
+    with conn:
+        conn.execute(
+            """
+            UPDATE expenses
+            SET category_id = ?, amount = ?, description = ?, expense_date = ?
+            WHERE id = ?
+            """,
+            (category_id, amount, description, expense_date, expense_id),
+        )
 
     logger.info("Expense %s edited by user '%s'.", expense_id, user["username"])
     return expense_id
