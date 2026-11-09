@@ -27,8 +27,75 @@
 - BUG-001: Denial comment accepts a whitespace-only string if it meets the minimum character length of 5.
   - Severity: Low
 
+## Session 2 - Employee App
 
-### What Team 1 testing ours tried
+**Tester: Divyan Varatharaj** 
+**Date: 2026-11-09** 
+**Duration:** 45 min
+**Environment: Employee App on windows 11, DB seeded from sql/schema.sql + sql/seed.sql**
+
+### What I tried on Team 1's Employee app
+
+#### Login
+
+| Probe                     | Input    | Observed | Assessment |
+| ------------------------- | -------- | -------- | ---------- |
+| Enter incorrect input >3 times             | "a" as username and password     | Denied  | OK         |
+| Enter empty username/password | Pressed enter    | Allowed   |  OK        |
+| Enter space(s) as username/password             | "    " | Allowed  |  OK        |
+| Enter correct details              | Username: emp_peter Password: Passw0rd!      | Allowed   |  OK        |
+
+#### Amount
+
+| Probe                     | Input    | Observed | Assessment |
+| ------------------------- | -------- | -------- | ---------- |
+| Minimum valid             | 0.01     | Allowed  | OK         |
+| More than 2 decimals | 0.111    | Denied   |  OK        |
+| Maximum valid             | 10000.00 | Allowed  |  OK        |
+| Trailing dot              | 32.      | Allowed   |  OK        |
+| Leading dot               | .32       | Allowed   |  OK        |
+| Leading zeros             | 00.01    | Allowed  |  OK        |
+| Number with string        | +72      | Denied   |  OK        |
+| Scientific notation       | 1e3      | Denied   |  OK        |
+
+
+#### Description
+
+| Probe                         | Input                            | Observed | Assessment            |
+| ----------------------------- | -------------------------------- | -------- | --------------------- |
+| Exactly 200 chars             | "a" 200 times                   | Allowed  | OK                    |
+| Exactly 201 chars             | "a" 201 times                   | Denied   |  OK                   |
+| 200+ chars with trailing spaces must be trimmed | "a" 200 times then " " 5 times | Allowed  | OK |
+| 200+ chars with spaces in between | "a" 100 times + " " 3 times + "a" 100 times| Denied  | OK |
+
+#### Category
+
+| Probe              | Input | Observed | Assessment       |
+| ------------------ | ----- | -------- | ---------------- |
+| Leading zero       | 03    | Denied  | OK |
+| Positive sign      | +1    | Denied   | OK               |
+| Float format       | 1.0   | Denied   |  OK              |
+| Padded with spaces | " 1 " | Allowed  |  OK              |
+
+
+#### Date
+
+| Probe              | Input | Observed | Assessment       |
+| ------------------ | ----- | -------- | ---------------- |
+| Not in date format       | ytr    | Denied  | OK |
+| Future date      | 2027-01-01    | Denied   | OK               |
+| 1 day in the future       | 2026-11-10   | Denied   |  OK              |
+| Same day | 2026-11-09 | Allowed  |  OK              |
+| Date from 90+ days ago | 2026-04-01 | Denied  |  OK              |
+| Date from 91+ days ago | 2026-04-01 | Denied  |  OK              |
+
+
+### What I found on Team 1's employee app
+
+**Bugs:**
+- NO BUGS
+
+# What team 1 testing ours tried
 
 ## Session 1 - Employee App
 
@@ -38,7 +105,6 @@
 **Duration:** 30 min
 **Environment:** Employee App on windows 11, DB seeded from sql/schema.sql + sql/seed.sql
 
-### What I tried on Team 2's employee app
 
 #### VR-01 Amount
 
