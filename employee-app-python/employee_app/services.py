@@ -50,7 +50,7 @@ def submit_expense(user, amount, category_id, description, expense_date, conn):
         raise ValidationError("Invalid amount entered. Value must be between 0.01-10,000.00.")
     elif not validators.validate_category(category_id, valid_ids):
         logger.warning("Expense submission rejected for user '%s': invalid category.", user["username"])
-        raise ValidationError("Invalid category entered. Value must be between 0-6.")
+        raise ValidationError("Invalid category entered. Value must be a category ID from the list (no leading zeros).")
     elif not validators.validate_description(description):
         logger.warning("Expense submission rejected for user '%s': invalid description.", user["username"])
         raise ValidationError("Invalid description entered. Entry must be between 1-200 chars.")

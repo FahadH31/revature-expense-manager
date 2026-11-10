@@ -46,7 +46,8 @@ def validate_category(raw, valid_ids):
         return False
 
     text = raw.strip()
-    if not text or not text.isdigit():
+    # Positive integer only: no leading zeros, signs, or non-ASCII digits.
+    if not re.fullmatch(r"[1-9][0-9]*", text):
         return False
 
     try:
