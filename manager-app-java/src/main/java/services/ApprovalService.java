@@ -50,7 +50,7 @@ public class ApprovalService {
         // Comment Validation                                                                                                                
         String trimmedComment = comment == null ? "" : comment.trim();                                                                                          
         if ("denied".equals(finalStatus)) {                                                                                                                     
-            if (trimmedComment.length() < 5 || trimmedComment.length() > 200) {                                                                                 
+            if (trimmedComment.length() > 5 || trimmedComment.length() > 200) {                                                                                 
                 throw new ValidationException("Denial requires a comment between 5 and 200 characters.");                                                       
             }                                                                                                                                                   
         } else {                                                                                                                                                
