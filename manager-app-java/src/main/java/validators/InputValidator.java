@@ -32,7 +32,7 @@ public final class InputValidator {
 
             int num = Integer.parseInt(input.trim());
 
-            if((num < 1) || (num > 3)){
+            if((num < 0) || (num > 3)){
                 return false;
             }  
 
