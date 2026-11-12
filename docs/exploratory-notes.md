@@ -95,7 +95,8 @@
 **Bugs:**
 - NO BUGS
 
-# What team 1 testing ours tried
+<br><br>
+# What Team 1 testing ours tried
 
 ## Session 1 - Employee App
 
@@ -144,4 +145,50 @@
 - BUG-001: Description does not count spaces towards character limit.
   - Severity: Med
 - BUG-002: Category accepts values with leading zeros like "01" but it should reject it.
+  - Severity: Low
+
+## Session 2 - Manager App
+
+**Charter:** Explore the manager flow with values near VR-07 & VR-08 boundaries to find off-by-one or rounding issues and check input handlers for defects.
+**Tester:** Adam Fischer
+**Date:** 2026-11-11
+**Duration:** 30 min
+**Environment:** Manager App on windows 10, Java 17, DB seeded from sql/schema.sql + sql/seed.sql
+
+### What I tried on Team 2's employee app
+
+#### Input Checks
+
+| Probe                  | Input      | Observed | Assessment |
+| ---------------------- | ---------- | -------- | ---------- |
+| Empty Input    | empty    | Switch to other input | Should stay in same question, empty username re-prompts username |
+| Regular Input  | Normal input | Password not hidden | Password should be hidden |
+| Bad input      | Non valid credentials | login blocked | OK |
+
+#### Menu Inputs
+
+| Probe                  | Input      | Observed | Assessment |
+| ---------------------- | ---------- | -------- | ---------- |
+| Input out of range     | 4          | Invalid choice | OK |
+| Input String           | abc        | Invalid choice | OK |
+| Proper Input           | 1,2,3      | Proper Output | OK |
+
+#### Review Expense
+
+| Probe                  | Input      | Observed | Assessment |
+| ---------------------- | ---------- | -------- | ---------- |
+| Negative ID            | -1         | Asked for a or d and comment | OK - Should maybe reject right away |
+| Already decided        | 12         | Asked for a or d and comment | OK - Should maybe reject right away |
+| String ID              | R          | Rejected Instantly | OK |
+| Proper Input           | 22         | Expense Updated | OK |
+
+
+
+### What I found on Team 2's employee app
+
+**Bugs:**
+
+- BUG-003: Empty Login input should re-prompt the same question.
+  - Severity: Med
+- BUG-004: Password input should be hidden
   - Severity: Low
