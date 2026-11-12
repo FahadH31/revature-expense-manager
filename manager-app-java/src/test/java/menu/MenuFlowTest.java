@@ -111,4 +111,80 @@ public class MenuFlowTest {
         verify(mockAuthService).login("wronguser", "wrongpass", mockConn);
         verify(mockAuthService).login("fahadh", "fahad123", mockConn);
     }
+
+    @Test
+    @Tag("smoke")
+    @DisplayName("Covers FR-A1 (manager app login with empty password reprompts without consuming attempt)")
+    void testLoginWithEmptyPasswordReprompt() throws Exception {
+        // Arrange
+        // Prompt 1: username "fahadh", empty password (pressed Enter)
+        // Prompt 2: username "fahadh", password "fahad123"
+        String simulatedInput = "fahadh\n\nfahadh\nfahad123\n";
+        System.setIn(new ByteArrayInputStream(simulatedInput.getBytes()));
+
+        Connection mockConn = mock(Connection.class);
+        AuthService mockAuthService = mock(AuthService.class);
+        User expectedUser = new User(1, "fahadh", "manager", "Fahad Hussain");
+        when(mockAuthService.login("fahadh", "fahad123", mockConn)).thenReturn(expectedUser);
+
+        Menu menu = new Menu();
+        Field authField = Menu.class.getDeclaredField("authService");
+        authField.setAccessible(true);
+        authField.set(menu, mockAuthService);
+
+        // Act
+        User loggedInUser = menu.runLogin(mockConn);
+
+        // Assert
+        assertNotNull(loggedInUser);
+        assertEquals("Fahad Hussain", loggedInUser.getFullName());
+        assertEquals("manager", loggedInUser.getRole());
+
+        String output = outputCapture.toString();
+        assertTrue(output.contains("Username: "));
+        assertTrue(output.contains("Password: "));
+        assertTrue(output.contains("Welcome, Fahad Hussain!"));
+        // Verify login was called only once with valid credentials, never with empty password
+        verify(mockAuthService, times(1)).login("fahadh", "fahad123", mockConn);
+        verify(mockAuthService, never()).login(eq("fahadh"), eq(""), any());
+    }
+
+    @Test
+    @Tag("smoke")
+    @DisplayName("Covers FR-A1 (manager app login with empty password and empty username and password)")
+    void testLoginWithEmptyPasswordAndEmptyUsernameAndPassword() throws Exception {
+        // Arrange
+        // 1. Valid username "fahadh" + empty password (Enter) -> reprompt
+        // 2. Empty username (Enter) + empty password (Enter)   -> reprompt
+        // 3. Valid username "fahadh" + valid password "fahad123" -> successful login
+        String simulatedInput = "fahadh\n\n\n\nfahadh\nfahad123\n";
+        System.setIn(new ByteArrayInputStream(simulatedInput.getBytes()));
+
+        Connection mockConn = mock(Connection.class);
+        AuthService mockAuthService = mock(AuthService.class);
+        User expectedUser = new User(1, "fahadh", "manager", "Fahad Hussain");
+        when(mockAuthService.login("fahadh", "fahad123", mockConn)).thenReturn(expectedUser);
+
+        Menu menu = new Menu();
+        Field authField = Menu.class.getDeclaredField("authService");
+        authField.setAccessible(true);
+        authField.set(menu, mockAuthService);
+
+        // Act
+        User loggedInUser = menu.runLogin(mockConn);
+
+        // Assert
+        assertNotNull(loggedInUser);
+        assertEquals("Fahad Hussain", loggedInUser.getFullName());
+        assertEquals("manager", loggedInUser.getRole());
+
+        String output = outputCapture.toString();
+        assertTrue(output.contains("Username: "));
+        assertTrue(output.contains("Password: "));
+        assertTrue(output.contains("Welcome, Fahad Hussain!"));
+        // Verify authService.login was only invoked once with valid credentials
+        verify(mockAuthService, times(1)).login("fahadh", "fahad123", mockConn);
+        verify(mockAuthService, never()).login(eq("fahadh"), eq(""), any());
+        verify(mockAuthService, never()).login(eq(""), eq(""), any());
+    }
 }
