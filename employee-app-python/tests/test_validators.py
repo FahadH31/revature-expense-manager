@@ -1,9 +1,13 @@
 """Unit tests for employee_app/validators.py.
 
 Valid/invalid examples come from the VR table in Project 1 (VR-01 to VR-04).
-Covers: VR-01, VR-02, VR-03, VR-04
+VR-08 and VR-09 also run every row of shared-test-data/validation_cases.csv,
+which is meant to be shared with the Java manager app.
+Covers: VR-01, VR-02, VR-03, VR-04, VR-08, VR-09
 """
+import csv
 from datetime import date, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -11,6 +15,8 @@ import validators
 
 CATEGORY_IDS = [1, 2, 3, 4, 5, 6]
 TODAY = date(2026, 11, 10)  # fixed so date tests don't depend on when they run
+MENU_CHOICES = {"0", "1", "2", "3", "4", "5"}  # employee app main menu (menu.py)
+SHARED_CASES_CSV = Path(__file__).resolve().parents[2] / "shared-test-data" / "validation_cases.csv"
 
 
 # VR-01 Amount
@@ -106,4 +112,31 @@ def test_validate_expense_id_rejects_python_edge_cases(raw):
 @pytest.mark.parametrize("raw", ["6", "-1", "1.0", None])
 def test_validate_menu_choice_rejects_unlisted(raw):
     """Covers: VR-09 - options not on the employee menu are rejected."""
-    assert not validators.validate_menu_choice(raw, {"0", "1", "2", "3", "4", "5"})
+    assert not validators.validate_menu_choice(raw, MENU_CHOICES)
+
+
+# Shared cases (VR-08, VR-09): one test per row of validation_cases.csv
+SHARED_VALIDATORS = {
+    "expense_id": validators.validate_expense_id,
+    "menu_choice": lambda choice: validators.validate_menu_choice(choice, MENU_CHOICES),
+}
+
+
+def load_shared_cases():
+    with SHARED_CASES_CSV.open(newline="", encoding="utf-8") as f:
+        return [
+            pytest.param(
+                row["field"],
+                row["input"],
+                row["expected"].strip().lower() == "true",
+                id=f'{row["field"]}-{row["input"] or "empty"}',
+            )
+            for row in csv.DictReader(f)
+        ]
+
+
+@pytest.mark.parametrize("field, raw, expected", load_shared_cases())
+def test_shared_validation_case(field, raw, expected):
+    """Covers: VR-08, VR-09 - Python validators agree with the shared CSV."""
+    assert field in SHARED_VALIDATORS, f"No validator mapped for CSV field '{field}'"
+    assert SHARED_VALIDATORS[field](raw) is expected
