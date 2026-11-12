@@ -28,7 +28,7 @@ def validate_amount(raw):
     except Exception:
         return False
 
-    return 0 < value <= 10000.00
+    return 0 < value < 10000.00
 
 
 def validate_description(raw):
