@@ -45,7 +45,10 @@ def test_login_success(db):
 @pytest.mark.parametrize("username, password", [
     ("wronguser", "test123"),   # TC-002 incorrect username
     ("test_emp_1", "wrongpass"),  # TC-003 incorrect password
-], ids=["TC-002-wrong-username", "TC-003-wrong-password"])
+    ("", "test123"),  # TC-004 empty username
+    ("test_emp_1", ""),  # TC-056 empty password
+    ("", ""),  # TC-057 both empty
+], ids=["TC-002-wrong-username", "TC-003-wrong-password", "TC-004-empty-username", "TC-056-empty-password", "TC-057-both-empty"])
 def test_login_rejects_bad_credentials(db, username, password):
     """Covers: TC-002, TC-003, FR-A1 - wrong username or password is rejected."""
     with pytest.raises(AuthenticationError, match="Invalid username or password."):

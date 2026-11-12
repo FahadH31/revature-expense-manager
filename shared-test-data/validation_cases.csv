@@ -6,6 +6,6 @@ expense_id,1.5,false
 expense_id,abc,false
 expense_id,,false
 menu_choice,1,true
-menu_choice,0,false
+menu_choice,7,false
 menu_choice,abc,false
 menu_choice,,false
