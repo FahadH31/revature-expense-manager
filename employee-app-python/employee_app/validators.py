@@ -57,6 +57,23 @@ def validate_category(raw, valid_ids):
         return False
 
 
+def validate_expense_id(raw):
+    """Return whether raw is a positive whole-number expense ID according to VR-08."""
+    if not isinstance(raw, str):
+        return False
+
+    # Positive integer only: no leading zeros, signs, decimals, or non-ASCII digits.
+    return re.fullmatch(r"[1-9][0-9]*", raw.strip()) is not None
+
+
+def validate_menu_choice(raw, valid_choices):
+    """Return whether raw is one of the supplied menu option keys according to VR-09."""
+    if not isinstance(raw, str):
+        return False
+
+    return raw.strip() in valid_choices
+
+
 def validate_date(raw, today = None):
     """Return whether raw is a valid expense date according to VR-04.
 

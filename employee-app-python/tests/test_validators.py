@@ -86,3 +86,24 @@ def test_validate_date_accepts_valid(raw):
 def test_validate_date_rejects_invalid(raw):
     """Covers: VR-04 - impossible date, wrong format, future, older than 90 days."""
     assert not validators.validate_date(raw, today=TODAY)
+
+
+# VR-08 Expense ID (shared cases live in shared-test-data/validation_cases.csv)
+def test_validate_expense_id_accepts_surrounding_spaces():
+    """Covers: VR-08 - input is trimmed before checking."""
+    assert validators.validate_expense_id(" 7 ")
+
+
+@pytest.mark.negative
+@pytest.mark.parametrize("raw", ["007", "+7", "٣", None])
+def test_validate_expense_id_rejects_python_edge_cases(raw):
+    """Covers: VR-08 - leading zeros, sign, non-ASCII digit, non-string."""
+    assert not validators.validate_expense_id(raw)
+
+
+# VR-09 Menu choice
+@pytest.mark.negative
+@pytest.mark.parametrize("raw", ["6", "-1", "1.0", None])
+def test_validate_menu_choice_rejects_unlisted(raw):
+    """Covers: VR-09 - options not on the employee menu are rejected."""
+    assert not validators.validate_menu_choice(raw, {"0", "1", "2", "3", "4", "5"})

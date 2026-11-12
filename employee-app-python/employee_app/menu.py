@@ -121,7 +121,7 @@ def run_menu(user, connection):
 
             while True:
                 raw_expense_id = input("Enter the expense ID to edit: ").strip()
-                if raw_expense_id.isdigit() and int(raw_expense_id) > 0:
+                if validators.validate_expense_id(raw_expense_id):
                     expense_id = int(raw_expense_id)
                     break
                 print("Invalid expense ID. Enter a positive whole number.")
@@ -137,7 +137,7 @@ def run_menu(user, connection):
 
             while True:
                 raw_expense_id = input("Enter the expense ID to delete: ").strip()
-                if raw_expense_id.isdigit() and int(raw_expense_id) > 0:
+                if validators.validate_expense_id(raw_expense_id):
                     expense_id = int(raw_expense_id)
                     break
                 print("Invalid expense ID. Enter a positive whole number.")
